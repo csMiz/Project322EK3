@@ -22,7 +22,9 @@ Partial Class Form1
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()>
     Private Sub InitializeComponent()
+        components = New ComponentModel.Container()
         Label1 = New Label()
+        Timer1 = New Timer(components)
         SuspendLayout()
         ' 
         ' Label1
@@ -33,6 +35,10 @@ Partial Class Form1
         Label1.Size = New Size(470, 475)
         Label1.TabIndex = 0
         Label1.Text = "Current:"
+        ' 
+        ' Timer1
+        ' 
+        Timer1.Enabled = True
         ' 
         ' Form1
         ' 
@@ -46,5 +52,6 @@ Partial Class Form1
     End Sub
 
     Friend WithEvents Label1 As Label
+    Friend WithEvents Timer1 As Timer
 
 End Class
