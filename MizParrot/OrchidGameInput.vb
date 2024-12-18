@@ -17,6 +17,7 @@ Public Module OrchidGameInput
     Public Enum DirectInputKeyboardCode As UInt32
         Q = 16
         W = 17
+        RightBracket = 27
         A = 30
         S = 31
         D = 32
@@ -29,6 +30,8 @@ Public Module OrchidGameInput
         Semicolon = 39
         Quotation = 40
         Enter = 28
+        Z = 44
+        RightShift = 54
     End Enum
 
 
@@ -102,33 +105,16 @@ Public Module OrchidGameInput
 
     Public Sub DefaultKeyboardDownEvent(keycode As UInt32)
         Debug.WriteLine(keycode)
-        Select Case keycode
-            Case DirectInputKeyboardCode.A
-                FormSharedVar.DisplayText = "1"
-                ParrotSoundManager.PlayNote(40)
-            Case DirectInputKeyboardCode.D
-                FormSharedVar.DisplayText = "2"
-                ParrotSoundManager.PlayNote(42)
-            Case DirectInputKeyboardCode.G
-                FormSharedVar.DisplayText = "3"
-                ParrotSoundManager.PlayNote(44)
-            Case DirectInputKeyboardCode.H
-                FormSharedVar.DisplayText = "4"
-                ParrotSoundManager.PlayNote(45)
-            Case DirectInputKeyboardCode.K
-                FormSharedVar.DisplayText = "5"
-                ParrotSoundManager.PlayNote(47)
-            Case DirectInputKeyboardCode.Semicolon
-                FormSharedVar.DisplayText = "6"
-                ParrotSoundManager.PlayNote(49)
-            Case DirectInputKeyboardCode.Enter
-                FormSharedVar.DisplayText = "7"
-                ParrotSoundManager.PlayNote(51)
-            Case DirectInputKeyboardCode.Q
-                FormSharedVar.DisplayText = "1~"
-                ParrotSoundManager.PlayNote(52)
+        If keycode >= DirectInputKeyboardCode.Q AndAlso keycode <= DirectInputKeyboardCode.RightBracket Then
+            ParrotSoundManager.PlayNote(keycode + 36)
+        ElseIf keycode >= DirectInputKeyboardCode.A AndAlso keycode <= DirectInputKeyboardCode.Quotation Then
+            ParrotSoundManager.PlayNote(keycode + 10)
+        ElseIf keycode >= DirectInputKeyboardCode.Z AndAlso keycode <= DirectInputKeyboardCode.RightShift Then
+            ParrotSoundManager.PlayNote(keycode - 16)
+        ElseIf keycode = DirectInputKeyboardCode.Enter Then
+            ParrotSoundManager.PlayNote(51)  ' 7
+        End If
 
-        End Select
     End Sub
 
     Public Sub DefaultKeyboardUpEvent(keycode As UInt32)

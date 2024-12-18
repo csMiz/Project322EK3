@@ -10,6 +10,7 @@ Module ParrotSoundManager
     'Public XASourceVoice As SourceVoice = Nothing
     Public SourceVoiceChannel As New List(Of SourceVoice)
     Public SourceVoiceStatus As New List(Of Integer)
+    Public StatusMutex As New Object
 
     Public NoteBuffer As New Dictionary(Of Integer, SharpDX.DataStream)
 
@@ -22,13 +23,17 @@ Module ParrotSoundManager
             Dim chan_id As Integer = i
             Dim sv As New SourceVoice(XAudio2Context, wformat, True)
             AddHandler sv.BufferEnd, Sub()
-                                         SourceVoiceStatus(chan_id) = 0
+                                         SyncLock StatusMutex
+                                             SourceVoiceStatus(chan_id) = 0
+                                         End SyncLock
                                      End Sub
             SourceVoiceChannel.Add(sv)
-            SourceVoiceStatus.Add(0)
+            SyncLock StatusMutex
+                SourceVoiceStatus.Add(0)
+            End SyncLock
         Next
 
-        For i = 30 To 60
+        For i = 10 To 70
             GenerateNoteBuffer(i)
         Next
 
@@ -93,18 +98,22 @@ Module ParrotSoundManager
     End Sub
 
     Public Function AllocateChannel() As Integer
-        For i = 0 To SourceVoiceStatus.Count - 1
-            Dim status As Integer = SourceVoiceStatus(i)
-            If status = 0 Then
-                SourceVoiceStatus(i) = 1
-                Return i
-            End If
-        Next
+        SyncLock StatusMutex
+            For i = 0 To SourceVoiceStatus.Count - 1
+                Dim status As Integer = SourceVoiceStatus(i)
+                If status = 0 Then
+                    SourceVoiceStatus(i) = 1
+                    Return i
+                End If
+            Next
+        End SyncLock
         Return -1
     End Function
 
     Public Sub DeallocateChannel(channel_id As Integer)
-        SourceVoiceStatus(channel_id) = 0
+        SyncLock StatusMutex
+            SourceVoiceStatus(channel_id) = 0
+        End SyncLock
     End Sub
 
 

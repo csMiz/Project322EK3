@@ -27,13 +27,16 @@ Public Class Form1
     End Sub
 
     Private Sub Timer1_Tick(sender As Object, e As EventArgs) Handles Timer1.Tick
-        Dim total_chan As Integer = SourceVoiceStatus.Count
+        Dim total_chan As Integer = 1
         Dim busy_chan As Integer = 0
-        For Each chan_status In SourceVoiceStatus
-            If chan_status > 0 Then
-                busy_chan += 1
-            End If
-        Next
+        SyncLock StatusMutex
+            total_chan = SourceVoiceStatus.Count
+            For Each chan_status In SourceVoiceStatus
+                If chan_status > 0 Then
+                    busy_chan += 1
+                End If
+            Next
+        End SyncLock
 
         Label1.Text = "Current: " & vbCrLf & busy_chan.ToString & " / " & total_chan.ToString
     End Sub
