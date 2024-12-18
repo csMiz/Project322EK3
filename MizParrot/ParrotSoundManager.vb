@@ -1,4 +1,5 @@
 ﻿Imports System.Runtime.InteropServices
+Imports SharpDX
 Imports SharpDX.Multimedia
 Imports SharpDX.XAudio2
 
@@ -6,7 +7,9 @@ Module ParrotSoundManager
 
     Public XAudio2Context As XAudio2 = Nothing
     Public XAMasteringVoice As MasteringVoice = Nothing
-    Public XASourceVoice As SourceVoice = Nothing
+    'Public XASourceVoice As SourceVoice = Nothing
+    Public SourceVoiceChannel As New List(Of SourceVoice)
+    Public SourceVoiceStatus As New List(Of Integer)
 
     Public NoteBuffer As New Dictionary(Of Integer, SharpDX.DataStream)
 
@@ -14,7 +17,16 @@ Module ParrotSoundManager
         XAudio2Context = New XAudio2()
         XAMasteringVoice = New MasteringVoice(XAudio2Context, 2, 44100)
         Dim wformat As New WaveFormat(44100, 16, 2)  ' int16, 44100HZ, 2chan
-        XASourceVoice = New SourceVoice(XAudio2Context, wformat)
+        'XASourceVoice = New SourceVoice(XAudio2Context, wformat)
+        For i = 0 To 36 - 1
+            Dim chan_id As Integer = i
+            Dim sv As New SourceVoice(XAudio2Context, wformat, True)
+            AddHandler sv.BufferEnd, Sub()
+                                         SourceVoiceStatus(chan_id) = 0
+                                     End Sub
+            SourceVoiceChannel.Add(sv)
+            SourceVoiceStatus.Add(0)
+        Next
 
         For i = 30 To 60
             GenerateNoteBuffer(i)
@@ -36,8 +48,12 @@ Module ParrotSoundManager
             .PlayLength = 0
         End With
 
-        XASourceVoice.SubmitSourceBuffer(data_buffer, Nothing)
-        XASourceVoice.Start(0)
+        Dim chan_id As Integer = AllocateChannel()
+        If chan_id >= 0 Then
+            Dim sv As SourceVoice = SourceVoiceChannel(chan_id)
+            sv.SubmitSourceBuffer(data_buffer, Nothing)
+            sv.Start(0)
+        End If
 
     End Sub
 
@@ -47,9 +63,17 @@ Module ParrotSoundManager
         Next
         NoteBuffer.Clear()
 
-        XAudio2Context.Dispose()
+        For Each sv In SourceVoiceChannel
+            sv.Dispose()
+        Next
+        SourceVoiceChannel.Clear()
+        SourceVoiceStatus.Clear()
+        'XASourceVoice.Dispose()
+
         XAMasteringVoice.Dispose()
-        XASourceVoice.Dispose()
+
+        XAudio2Context.Dispose()
+
     End Sub
 
     Public Sub GenerateNoteBuffer(pitch As Integer)
@@ -66,6 +90,21 @@ Module ParrotSoundManager
         Next
 
         NoteBuffer.Add(pitch, dstream)
+    End Sub
+
+    Public Function AllocateChannel() As Integer
+        For i = 0 To SourceVoiceStatus.Count - 1
+            Dim status As Integer = SourceVoiceStatus(i)
+            If status = 0 Then
+                SourceVoiceStatus(i) = 1
+                Return i
+            End If
+        Next
+        Return -1
+    End Function
+
+    Public Sub DeallocateChannel(channel_id As Integer)
+        SourceVoiceStatus(channel_id) = 0
     End Sub
 
 
