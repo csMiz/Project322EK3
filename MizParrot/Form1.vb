@@ -10,6 +10,8 @@ Public Class Form1
         AddHandler OrchidGameInput.OrchidGameKeyboardDown, AddressOf DefaultKeyboardDownEvent
         AddHandler OrchidGameInput.OrchidGameKeyboardUp, AddressOf DefaultKeyboardUpEvent
 
+        Dim adsr_task As New Task(AddressOf ADSREnvelopeLoop)
+        adsr_task.Start()
 
         Form1_Resize(Nothing, Nothing)
     End Sub

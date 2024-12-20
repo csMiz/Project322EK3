@@ -141,4 +141,39 @@ Module ParrotSoundManager
     End Sub
 
 
+    Public Sub ADSREnvelopeLoop()
+        Dim now_time As Date
+        Dim last_time As Date = DateTime.Now
+        While DirectInputEnabled
+            now_time = DateTime.Now
+            If (now_time - last_time).TotalMilliseconds < 16.6667 Then
+                Continue While
+            End If
+
+            SyncLock StatusMutex
+                For i = 0 To SourceVoiceStatus.Count - 1
+                    If SourceVoiceStatus(i) = 1 Then
+                        Dim vol As Single = 0.0
+                        SourceVoiceChannel(i).GetVolume(vol)
+                        vol += 0.2
+                        If vol >= 1.0 Then
+                            SourceVoiceStatus(i) = 2
+                        End If
+                        SourceVoiceChannel(i).SetVolume(Math.Min(vol, 1.0))
+                    ElseIf SourceVoiceStatus(i) = 2 Then
+                        Dim vol As Single = 0.0
+                        SourceVoiceChannel(i).GetVolume(vol)
+                        vol -= 0.03
+                        If vol <= 0.0 Then
+                            vol = 0.0
+                        End If
+                        SourceVoiceChannel(i).SetVolume(vol)
+                    End If
+                Next
+            End SyncLock
+
+            last_time = now_time
+        End While
+    End Sub
+
 End Module
