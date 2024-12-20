@@ -21,7 +21,7 @@ Module ParrotSoundManager
         'XASourceVoice = New SourceVoice(XAudio2Context, wformat)
         For i = 0 To 36 - 1
             Dim chan_id As Integer = i
-            Dim sv As New SourceVoice(XAudio2Context, wformat, True)
+            Dim sv As New SourceVoice(XAudio2Context, wformat, VoiceFlags.None, 4.0, True)
             AddHandler sv.BufferEnd, Sub()
                                          SyncLock StatusMutex
                                              SourceVoiceStatus(chan_id) = 0
@@ -57,6 +57,30 @@ Module ParrotSoundManager
         If chan_id >= 0 Then
             Dim sv As SourceVoice = SourceVoiceChannel(chan_id)
             sv.SubmitSourceBuffer(data_buffer, Nothing)
+            sv.Start(0)
+        End If
+
+    End Sub
+
+    Public Sub PlayNote2(pitch As Integer)
+        Dim data_buffer As AudioBuffer = New AudioBuffer()
+        With data_buffer
+            .AudioBytes = 44100 * 4 * 1
+            .AudioDataPointer = NoteBuffer(40).DataPointer
+            .Context = Nothing
+            .Flags = BufferFlags.EndOfStream
+            .LoopCount = 0
+            .LoopBegin = 0
+            .LoopCount = 0
+            .PlayBegin = 0
+            .PlayLength = 0
+        End With
+
+        Dim chan_id As Integer = AllocateChannel()
+        If chan_id >= 0 Then
+            Dim sv As SourceVoice = SourceVoiceChannel(chan_id)
+            sv.SubmitSourceBuffer(data_buffer, Nothing)
+            sv.SetFrequencyRatio(2.0 ^ ((pitch - 40) / 12.0))
             sv.Start(0)
         End If
 

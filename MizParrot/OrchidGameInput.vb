@@ -106,13 +106,13 @@ Public Module OrchidGameInput
     Public Sub DefaultKeyboardDownEvent(keycode As UInt32)
         Debug.WriteLine(keycode)
         If keycode >= DirectInputKeyboardCode.Q AndAlso keycode <= DirectInputKeyboardCode.RightBracket Then
-            ParrotSoundManager.PlayNote(keycode + 36)
+            ParrotSoundManager.PlayNote2(keycode + 36)
         ElseIf keycode >= DirectInputKeyboardCode.A AndAlso keycode <= DirectInputKeyboardCode.Quotation Then
-            ParrotSoundManager.PlayNote(keycode + 10)
+            ParrotSoundManager.PlayNote2(keycode + 10)
         ElseIf keycode >= DirectInputKeyboardCode.Z AndAlso keycode <= DirectInputKeyboardCode.RightShift Then
-            ParrotSoundManager.PlayNote(keycode - 16)
+            ParrotSoundManager.PlayNote2(keycode - 16)
         ElseIf keycode = DirectInputKeyboardCode.Enter Then
-            ParrotSoundManager.PlayNote(51)  ' 7
+            ParrotSoundManager.PlayNote2(51)  ' 7
         End If
 
     End Sub
