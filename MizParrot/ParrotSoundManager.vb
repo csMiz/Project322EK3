@@ -22,7 +22,7 @@ Module ParrotSoundManager
         'XASourceVoice = New SourceVoice(XAudio2Context, wformat)
         For i = 0 To 36 - 1
             Dim chan_id As Integer = i
-            Dim sv As New SourceVoice(XAudio2Context, wformat, VoiceFlags.None, 3.0, True)
+            Dim sv As New SourceVoice(XAudio2Context, wformat, VoiceFlags.None, 4.0, True)
             AddHandler sv.BufferEnd, Sub()
                                          DeallocateChannel(chan_id)
                                      End Sub

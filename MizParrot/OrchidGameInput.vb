@@ -32,6 +32,9 @@ Public Module OrchidGameInput
         Enter = 28
         Z = 44
         RightShift = 54
+        CapsLock = 58
+        LeftShift = 42
+        Tab = 15
     End Enum
 
 
@@ -113,6 +116,12 @@ Public Module OrchidGameInput
             ParrotSoundManager.PlayNote2(keycode - 16)
         ElseIf keycode = DirectInputKeyboardCode.Enter Then
             ParrotSoundManager.PlayNote2(51)  ' 7
+        ElseIf keycode = DirectInputKeyboardCode.CapsLock Then
+            ParrotSoundManager.PlayNote2(39)
+        ElseIf keycode = DirectInputKeyboardCode.LeftShift Then
+            ParrotSoundManager.PlayNote2(27)
+        ElseIf keycode = DirectInputKeyboardCode.Tab Then
+            ParrotSoundManager.PlayNote2(51)
         End If
 
     End Sub
