@@ -1,5 +1,4 @@
-﻿Imports System.Runtime.InteropServices
-Imports SharpDX
+﻿Imports SharpDX
 Imports SharpDX.Multimedia
 Imports SharpDX.XAudio2
 
@@ -33,7 +32,7 @@ Module ParrotSoundManager
             End SyncLock
         Next
 
-        GenerateNoteBuffer()
+        GenerateNoteBuffer2()
 
     End Sub
 
@@ -95,6 +94,57 @@ Module ParrotSoundManager
         NoteBuffer40 = dstream
     End Sub
 
+    Public Sub GenerateNoteBuffer2(Optional pitch As Integer = 40)
+        Dim freq As Single = 440.0 * (2.0 ^ ((pitch - 49) / 12.0))
+
+        Dim fx = Function(freq_in As Single, t As Single) As Single
+                     ' 三角波
+                     Dim res As Single = 0.0F
+                     Const ITER As Integer = 72
+                     For i = 1 To ITER Step 2
+                         Dim scale As Single = (1.0 / i) ^ 2
+                         scale *= (-1) ^ (CInt(Math.Floor(i / 2)))
+                         res += Math.Sin(i * 2.0 * Math.PI * freq * t) * scale
+                     Next
+                     res /= 1.23
+                     Return res
+
+                     '' 方波
+                     'Dim res As Single = 0.0F
+                     'Const ITER As Integer = 72
+                     'For i = 1 To ITER Step 2
+                     '    Dim scale As Single = 1.0 / i
+                     '    res += Math.Sin(i * 2.0 * Math.PI * freq * t) * scale
+                     'Next
+                     'res /= 0.93
+                     'Return res
+
+                     '' 锯齿波
+                     'Dim res As Single = 0.0F
+                     'Const ITER As Integer = 72
+                     'For i = 1 To ITER
+                     '    Dim scale As Single = 1.0 / i
+                     '    res += Math.Sin(i * 2.0 * Math.PI * freq * t) * scale
+                     'Next
+                     'res /= 1.85
+                     'Return res
+                 End Function
+
+        Dim dstream As New SharpDX.DataStream(44100 * 4 * 3, True, True)
+        dstream.Position = 0
+        For i = 0 To 44100 * 3 - 1
+            Dim t As Single = i / 44100.0
+            Dim val As Single = fx(freq, t)
+
+            dstream.Write(CShort(val * 32767))
+            dstream.Write(CShort(val * 32767))
+        Next
+
+        NoteBuffer40 = dstream
+    End Sub
+
+
+
     Public Function AllocateChannel() As Integer
         SyncLock StatusMutex
             For i = 0 To SourceVoiceStatus.Count - 1
@@ -131,7 +181,7 @@ Module ParrotSoundManager
             SyncLock StatusMutex
                 For i = 0 To SourceVoiceStatus.Count - 1
                     If SourceVoiceStatus(i) = 1 Then
-                        Dim pitch_speed_rate As Single = 2.0 ^ ((SourceVoicePitch(i) - 40) / 12.0)
+                        Dim pitch_speed_rate As Single = 1.2 ^ ((SourceVoicePitch(i) - 40) / 12.0)
                         Dim vol As Single = 0.0
                         SourceVoiceChannel(i).GetVolume(vol)
                         vol += 0.2 * pitch_speed_rate
@@ -140,7 +190,7 @@ Module ParrotSoundManager
                         End If
                         SourceVoiceChannel(i).SetVolume(Math.Min(vol, 1.0))
                     ElseIf SourceVoiceStatus(i) = 2 Then
-                        Dim pitch_speed_rate As Single = 2.0 ^ ((SourceVoicePitch(i) - 40) / 12.0)
+                        Dim pitch_speed_rate As Single = 1.2 ^ ((SourceVoicePitch(i) - 40) / 12.0)
                         Dim vol As Single = 0.0
                         SourceVoiceChannel(i).GetVolume(vol)
                         vol -= 0.03 * pitch_speed_rate

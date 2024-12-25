@@ -4,14 +4,20 @@
 Public Class Form1
 
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        Const TEST_WAVEFORM As Boolean = False
 
-        InitializeXAudio2()
-        InitDirectInput()
-        AddHandler OrchidGameInput.OrchidGameKeyboardDown, AddressOf DefaultKeyboardDownEvent
-        AddHandler OrchidGameInput.OrchidGameKeyboardUp, AddressOf DefaultKeyboardUpEvent
+        If TEST_WAVEFORM Then
+            Form2.Show()
+        Else
+            InitializeXAudio2()
+            InitDirectInput()
+            AddHandler OrchidGameInput.OrchidGameKeyboardDown, AddressOf DefaultKeyboardDownEvent
+            AddHandler OrchidGameInput.OrchidGameKeyboardUp, AddressOf DefaultKeyboardUpEvent
 
-        Dim adsr_task As New Task(AddressOf ADSREnvelopeLoop)
-        adsr_task.Start()
+            Dim adsr_task As New Task(AddressOf ADSREnvelopeLoop)
+            adsr_task.Start()
+        End If
+
 
         Form1_Resize(Nothing, Nothing)
     End Sub
