@@ -108,26 +108,38 @@ Public Module OrchidGameInput
 
     Public Sub DefaultKeyboardDownEvent(keycode As UInt32)
         Debug.WriteLine(keycode)
+        Dim chan_id As Integer = -1
         If keycode >= DirectInputKeyboardCode.Q AndAlso keycode <= DirectInputKeyboardCode.RightBracket Then
-            ParrotSoundManager.PlayNote2(keycode + 36)
+            chan_id = ParrotSoundManager.PlayNote2(keycode + 36)
         ElseIf keycode >= DirectInputKeyboardCode.A AndAlso keycode <= DirectInputKeyboardCode.Quotation Then
-            ParrotSoundManager.PlayNote2(keycode + 10)
+            chan_id = ParrotSoundManager.PlayNote2(keycode + 10)
         ElseIf keycode >= DirectInputKeyboardCode.Z AndAlso keycode <= DirectInputKeyboardCode.RightShift Then
-            ParrotSoundManager.PlayNote2(keycode - 16)
+            chan_id = ParrotSoundManager.PlayNote2(keycode - 16)
         ElseIf keycode = DirectInputKeyboardCode.Enter Then
-            ParrotSoundManager.PlayNote2(51)  ' 7
+            chan_id = ParrotSoundManager.PlayNote2(51)  ' 7
         ElseIf keycode = DirectInputKeyboardCode.CapsLock Then
-            ParrotSoundManager.PlayNote2(39)
+            chan_id = ParrotSoundManager.PlayNote2(39)
         ElseIf keycode = DirectInputKeyboardCode.LeftShift Then
-            ParrotSoundManager.PlayNote2(27)
+            chan_id = ParrotSoundManager.PlayNote2(27)
         ElseIf keycode = DirectInputKeyboardCode.Tab Then
-            ParrotSoundManager.PlayNote2(51)
+            chan_id = ParrotSoundManager.PlayNote2(51)
         End If
+        SyncLock StatusMutex
+            KeyDownChannelStub(keycode) = chan_id
+            If chan_id >= 0 Then
+                KeyUpChannelStub(chan_id) = False
+            End If
+        End SyncLock
 
     End Sub
 
     Public Sub DefaultKeyboardUpEvent(keycode As UInt32)
-
+        SyncLock StatusMutex
+            Dim chan_id As Integer = KeyDownChannelStub(keycode)
+            If chan_id >= 0 Then
+                KeyUpChannelStub(chan_id) = True
+            End If
+        End SyncLock
     End Sub
 
 End Module

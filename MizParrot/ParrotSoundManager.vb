@@ -9,10 +9,22 @@ Module ParrotSoundManager
     'Public XASourceVoice As SourceVoice = Nothing
     Public SourceVoiceChannel As New List(Of SourceVoice)
     Public SourceVoiceStatus As New List(Of Integer)
+    Public SourceVoiceADSRFrame As New List(Of Single())
     Public SourceVoicePitch As New List(Of Integer)
+    ''' <summary>
+    ''' (keycode, channel_id)
+    ''' </summary>
+    Public KeyDownChannelStub As New Dictionary(Of Integer, Integer)
+    ''' <summary>
+    ''' (channel_id, key_released)
+    ''' </summary>
+    Public KeyUpChannelStub As New Dictionary(Of Integer, Boolean)
     Public StatusMutex As New Object
 
     Public NoteBuffer40 As SharpDX.DataStream
+
+    ' [A gradient][A frame][D gradient][D frame][S gradient][S max frame for decrease][R gradient]
+    Public ADSRSet As Single() = {0.2, 5, 0.1, 4, 0.01, 40, 0.02}
 
     Public Sub InitializeXAudio2()
         XAudio2Context = New XAudio2()
@@ -29,6 +41,7 @@ Module ParrotSoundManager
             SyncLock StatusMutex
                 SourceVoiceStatus.Add(0)
                 SourceVoicePitch.Add(-1)
+                SourceVoiceADSRFrame.Add({})
             End SyncLock
         Next
 
@@ -36,7 +49,12 @@ Module ParrotSoundManager
 
     End Sub
 
-    Public Sub PlayNote2(pitch As Integer)
+    ''' <summary>
+    ''' returns channel id
+    ''' </summary>
+    ''' <param name="pitch"></param>
+    ''' <returns></returns>
+    Public Function PlayNote2(pitch As Integer) As Integer
         Dim data_buffer As AudioBuffer = New AudioBuffer()
         With data_buffer
             .AudioBytes = 44100 * 4 * 3
@@ -45,7 +63,7 @@ Module ParrotSoundManager
             .Flags = BufferFlags.EndOfStream
             .LoopCount = 0
             .LoopBegin = 0
-            .LoopCount = 0
+            .LoopCount = 255
             .PlayBegin = 0
             .PlayLength = 0
         End With
@@ -60,8 +78,8 @@ Module ParrotSoundManager
             sv.SetFrequencyRatio(2.0 ^ ((pitch - 40) / 12.0))
             sv.Start(0)
         End If
-
-    End Sub
+        Return chan_id
+    End Function
 
     Public Sub DisposeXAudio2()
         NoteBuffer40.Dispose()
@@ -152,6 +170,7 @@ Module ParrotSoundManager
                 If status = 0 Then
                     SourceVoiceStatus(i) = 1
                     SourceVoicePitch(i) = -1
+                    SourceVoiceADSRFrame(i) = {ADSRSet(1), ADSRSet(3), ADSRSet(5)}
                     Return i
                 End If
             Next
@@ -170,6 +189,14 @@ Module ParrotSoundManager
 
 
     Public Sub ADSREnvelopeLoop()
+
+        ' ADSR status:
+        ' 0-IDLE
+        ' 1-A
+        ' 2-D
+        ' 3-S if key released, goto 4
+        ' 4-R
+
         Dim now_time As Date
         Dim last_time As Date = DateTime.Now
         While DirectInputEnabled
@@ -180,26 +207,62 @@ Module ParrotSoundManager
 
             SyncLock StatusMutex
                 For i = 0 To SourceVoiceStatus.Count - 1
-                    If SourceVoiceStatus(i) = 1 Then
+                    Dim sv_status As Integer = SourceVoiceStatus(i)
+                    If sv_status <> 0 Then
                         Dim pitch_speed_rate As Single = 1.2 ^ ((SourceVoicePitch(i) - 40) / 12.0)
-                        Dim vol As Single = 0.0
-                        SourceVoiceChannel(i).GetVolume(vol)
-                        vol += 0.2 * pitch_speed_rate
-                        If vol >= 1.0 Then
-                            SourceVoiceStatus(i) = 2
+                        If sv_status = 1 Then    ' A process
+                            Dim vol As Single = 0.0
+                            SourceVoiceChannel(i).GetVolume(vol)
+                            Dim a_gradient As Single = ADSRSet(0) * pitch_speed_rate
+                            vol += a_gradient
+                            SourceVoiceChannel(i).SetVolume(Math.Min(vol, 1.0))
+                            ' adsr remain?
+                            ' TODO:
+                            ' need reset!
+                            SourceVoiceADSRFrame(i)(0) -= pitch_speed_rate
+                            If (SourceVoiceADSRFrame(i)(0) <= 0) Then
+                                SourceVoiceStatus(i) = 2    ' A -> D
+                            End If
+                        ElseIf sv_status = 2 Then    ' D process
+                            Dim vol As Single = 0.0
+                            SourceVoiceChannel(i).GetVolume(vol)
+                            Dim d_gradient As Single = ADSRSet(2) * pitch_speed_rate
+                            vol -= d_gradient
+                            SourceVoiceChannel(i).SetVolume(Math.Max(vol, 0.0))
+                            SourceVoiceADSRFrame(i)(1) -= pitch_speed_rate
+                            If (SourceVoiceADSRFrame(i)(1) <= 0) Then
+                                SourceVoiceStatus(i) = 3    ' D -> S
+                            End If
+                        ElseIf sv_status = 3 Then    ' S process
+                            If KeyUpChannelStub(i) Then
+                                SourceVoiceStatus(i) = 4    ' S -> R
+                            Else
+                                If (SourceVoiceADSRFrame(i)(2) > 0) Then
+                                    Dim vol As Single = 0.0
+                                    SourceVoiceChannel(i).GetVolume(vol)
+                                    Dim s_gradient As Single = ADSRSet(4) * pitch_speed_rate
+                                    vol -= s_gradient
+                                    SourceVoiceChannel(i).SetVolume(Math.Max(vol, 0.0))
+                                    SourceVoiceADSRFrame(i)(2) -= pitch_speed_rate
+                                End If
+                            End If
+                        ElseIf sv_status = 4 Then    ' R process
+                            Dim vol As Single = 0.0
+                            SourceVoiceChannel(i).GetVolume(vol)
+                            Dim r_gradient As Single = ADSRSet(6) * pitch_speed_rate
+                            vol -= r_gradient
+                            SourceVoiceChannel(i).SetVolume(Math.Max(vol, 0.0))
+                            If (vol <= 0) Then
+                                SourceVoiceStatus(i) = 0    ' R -> IDLE
+                                DeallocateChannel(i)
+                            End If
                         End If
-                        SourceVoiceChannel(i).SetVolume(Math.Min(vol, 1.0))
-                    ElseIf SourceVoiceStatus(i) = 2 Then
-                        Dim pitch_speed_rate As Single = 1.2 ^ ((SourceVoicePitch(i) - 40) / 12.0)
-                        Dim vol As Single = 0.0
-                        SourceVoiceChannel(i).GetVolume(vol)
-                        vol -= 0.03 * pitch_speed_rate
-                        If vol <= 0.0 Then
-                            vol = 0.0
-                            DeallocateChannel(i)
-                        End If
-                        SourceVoiceChannel(i).SetVolume(vol)
+
                     End If
+
+
+
+
                 Next
             End SyncLock
 
