@@ -35,6 +35,7 @@ Public Module OrchidGameInput
         CapsLock = 58
         LeftShift = 42
         Tab = 15
+        BackSlash = 43
     End Enum
 
 
@@ -109,21 +110,40 @@ Public Module OrchidGameInput
     Public Sub DefaultKeyboardDownEvent(keycode As UInt32)
         Debug.WriteLine(keycode)
         Dim chan_id As Integer = -1
+        '' normal layout
+        'If keycode >= DirectInputKeyboardCode.Q AndAlso keycode <= DirectInputKeyboardCode.RightBracket Then
+        '    chan_id = ParrotSoundManager.PlayNote2(keycode + 36)
+        'ElseIf keycode >= DirectInputKeyboardCode.A AndAlso keycode <= DirectInputKeyboardCode.Quotation Then
+        '    chan_id = ParrotSoundManager.PlayNote2(keycode + 10)
+        'ElseIf keycode >= DirectInputKeyboardCode.Z AndAlso keycode <= DirectInputKeyboardCode.RightShift Then
+        '    chan_id = ParrotSoundManager.PlayNote2(keycode - 16)
+        'ElseIf keycode = DirectInputKeyboardCode.Enter Then
+        '    chan_id = ParrotSoundManager.PlayNote2(51)
+        'ElseIf keycode = DirectInputKeyboardCode.CapsLock Then
+        '    chan_id = ParrotSoundManager.PlayNote2(39)
+        'ElseIf keycode = DirectInputKeyboardCode.LeftShift Then
+        '    chan_id = ParrotSoundManager.PlayNote2(27)
+        'ElseIf keycode = DirectInputKeyboardCode.Tab Then
+        '    chan_id = ParrotSoundManager.PlayNote2(51)
+        'End If
+
+        ' simplified layout
+        Dim LEFT_SHIFT As Integer = 0
+        Dim RIGHT_SHIFT As Integer = 12
         If keycode >= DirectInputKeyboardCode.Q AndAlso keycode <= DirectInputKeyboardCode.RightBracket Then
-            chan_id = ParrotSoundManager.PlayNote2(keycode + 36)
+            Dim pitch_list As Integer() = {28, 30, 32, 33, 35, 37, 39, 40, 42, 44, 45, 47}
+            chan_id = ParrotSoundManager.PlayNote2(pitch_list(keycode - DirectInputKeyboardCode.Q) + LEFT_SHIFT)
         ElseIf keycode >= DirectInputKeyboardCode.A AndAlso keycode <= DirectInputKeyboardCode.Quotation Then
-            chan_id = ParrotSoundManager.PlayNote2(keycode + 10)
         ElseIf keycode >= DirectInputKeyboardCode.Z AndAlso keycode <= DirectInputKeyboardCode.RightShift Then
-            chan_id = ParrotSoundManager.PlayNote2(keycode - 16)
+            Dim pitch_list As Integer() = {32, 33, 35, 37, 39, 40, 42, 44, 45, 47, 49}
+            chan_id = ParrotSoundManager.PlayNote2(pitch_list(keycode - DirectInputKeyboardCode.Z) + RIGHT_SHIFT)
         ElseIf keycode = DirectInputKeyboardCode.Enter Then
-            chan_id = ParrotSoundManager.PlayNote2(51)  ' 7
         ElseIf keycode = DirectInputKeyboardCode.CapsLock Then
-            chan_id = ParrotSoundManager.PlayNote2(39)
         ElseIf keycode = DirectInputKeyboardCode.LeftShift Then
-            chan_id = ParrotSoundManager.PlayNote2(27)
         ElseIf keycode = DirectInputKeyboardCode.Tab Then
-            chan_id = ParrotSoundManager.PlayNote2(51)
+        ElseIf keycode = DirectInputKeyboardCode.BackSlash Then
         End If
+
         SyncLock StatusMutex
             KeyDownChannelStub(keycode) = chan_id
             If chan_id >= 0 Then

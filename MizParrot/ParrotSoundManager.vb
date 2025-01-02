@@ -19,12 +19,13 @@ Module ParrotSoundManager
     ''' (channel_id, key_released)
     ''' </summary>
     Public KeyUpChannelStub As New Dictionary(Of Integer, Boolean)
+    Public AllocCursor As Integer = 0
     Public StatusMutex As New Object
 
     Public NoteBuffer40 As SharpDX.DataStream
 
     ' [A gradient][A frame][D gradient][D frame][S gradient][S max frame for decrease][R gradient]
-    Public ADSRSet As Single() = {0.2, 5, 0.1, 4, 0.01, 40, 0.02}
+    Public ADSRSet As Single() = {1.0, 1, 0.0249, 1, 0.00, 0, 0.0249}
 
     Public Sub InitializeXAudio2()
         XAudio2Context = New XAudio2()
@@ -116,26 +117,26 @@ Module ParrotSoundManager
         Dim freq As Single = 440.0 * (2.0 ^ ((pitch - 49) / 12.0))
 
         Dim fx = Function(freq_in As Single, t As Single) As Single
-                     ' 三角波
-                     Dim res As Single = 0.0F
-                     Const ITER As Integer = 72
-                     For i = 1 To ITER Step 2
-                         Dim scale As Single = (1.0 / i) ^ 2
-                         scale *= (-1) ^ (CInt(Math.Floor(i / 2)))
-                         res += Math.Sin(i * 2.0 * Math.PI * freq * t) * scale
-                     Next
-                     res /= 1.23
-                     Return res
-
-                     '' 方波
+                     '' 三角波
                      'Dim res As Single = 0.0F
                      'Const ITER As Integer = 72
                      'For i = 1 To ITER Step 2
-                     '    Dim scale As Single = 1.0 / i
+                     '    Dim scale As Single = (1.0 / i) ^ 2
+                     '    scale *= (-1) ^ (CInt(Math.Floor(i / 2)))
                      '    res += Math.Sin(i * 2.0 * Math.PI * freq * t) * scale
                      'Next
-                     'res /= 0.93
+                     'res /= 1.23
                      'Return res
+
+                     ' 方波
+                     Dim res As Single = 0.0F
+                     Const ITER As Integer = 72
+                     For i = 1 To ITER Step 2
+                         Dim scale As Single = 1.0 / i
+                         res += Math.Sin(i * 2.0 * Math.PI * freq * t) * scale
+                     Next
+                     res /= 0.93
+                     Return res
 
                      '' 锯齿波
                      'Dim res As Single = 0.0F
@@ -165,12 +166,20 @@ Module ParrotSoundManager
 
     Public Function AllocateChannel() As Integer
         SyncLock StatusMutex
-            For i = 0 To SourceVoiceStatus.Count - 1
+            For i_iter = 0 To SourceVoiceStatus.Count - 1
+                Dim i As Integer = AllocCursor + i_iter
+                If i >= SourceVoiceStatus.Count Then
+                    i -= SourceVoiceStatus.Count
+                End If
                 Dim status As Integer = SourceVoiceStatus(i)
                 If status = 0 Then
                     SourceVoiceStatus(i) = 1
                     SourceVoicePitch(i) = -1
                     SourceVoiceADSRFrame(i) = {ADSRSet(1), ADSRSet(3), ADSRSet(5)}
+                    AllocCursor += 1
+                    If AllocCursor >= SourceVoiceStatus.Count Then
+                        AllocCursor -= SourceVoiceStatus.Count
+                    End If
                     Return i
                 End If
             Next
@@ -244,6 +253,8 @@ Module ParrotSoundManager
                                     vol -= s_gradient
                                     SourceVoiceChannel(i).SetVolume(Math.Max(vol, 0.0))
                                     SourceVoiceADSRFrame(i)(2) -= pitch_speed_rate
+                                Else
+                                    SourceVoiceStatus(i) = 4    ' S -> R
                                 End If
                             End If
                         ElseIf sv_status = 4 Then    ' R process
