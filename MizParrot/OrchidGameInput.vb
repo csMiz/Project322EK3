@@ -129,14 +129,26 @@ Public Module OrchidGameInput
 
         ' simplified layout
         Dim LEFT_SHIFT As Integer = 0
-        Dim RIGHT_SHIFT As Integer = 12
+        Dim RIGHT_SHIFT As Integer = 0
         If keycode >= DirectInputKeyboardCode.Q AndAlso keycode <= DirectInputKeyboardCode.RightBracket Then
-            Dim pitch_list As Integer() = {28, 30, 32, 33, 35, 37, 39, 40, 42, 44, 45, 47}
-            chan_id = ParrotSoundManager.PlayNote2(pitch_list(keycode - DirectInputKeyboardCode.Q) + LEFT_SHIFT)
+            Dim pitch_list_left As Integer() = {28, 30, 32, 33, 35, 37}
+            Dim pitch_list_right As Integer() = {39, 40, 42, 44, 45, 47}
+            Dim id As Integer = keycode - DirectInputKeyboardCode.Q
+            If id < 6 Then
+                chan_id = ParrotSoundManager.PlayNote2(pitch_list_left(id) + LEFT_SHIFT)
+            Else
+                chan_id = ParrotSoundManager.PlayNote2(pitch_list_right(id - 6) + RIGHT_SHIFT)
+            End If
         ElseIf keycode >= DirectInputKeyboardCode.A AndAlso keycode <= DirectInputKeyboardCode.Quotation Then
+            Dim pitch_list_left As Integer() = {28, 30, 32, 33, 35}
+            Dim pitch_list_right As Integer() = {37, 39, 40, 42, 44, 45}
+            Dim id As Integer = keycode - DirectInputKeyboardCode.A
+            If id < 5 Then
+                chan_id = ParrotSoundManager.PlayNote2(pitch_list_left(id) + LEFT_SHIFT)
+            Else
+                chan_id = ParrotSoundManager.PlayNote2(pitch_list_right(id - 5) + RIGHT_SHIFT)
+            End If
         ElseIf keycode >= DirectInputKeyboardCode.Z AndAlso keycode <= DirectInputKeyboardCode.RightShift Then
-            Dim pitch_list As Integer() = {32, 33, 35, 37, 39, 40, 42, 44, 45, 47, 49}
-            chan_id = ParrotSoundManager.PlayNote2(pitch_list(keycode - DirectInputKeyboardCode.Z) + RIGHT_SHIFT)
         ElseIf keycode = DirectInputKeyboardCode.Enter Then
         ElseIf keycode = DirectInputKeyboardCode.CapsLock Then
         ElseIf keycode = DirectInputKeyboardCode.LeftShift Then
