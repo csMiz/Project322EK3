@@ -4,10 +4,11 @@
 Public Class Form1
 
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        Const TEST_WAVEFORM As Boolean = False
+        Const TEST_WAVEFORM As Boolean = True
 
         If TEST_WAVEFORM Then
             Form2.Show()
+
         Else
             InitializeXAudio2()
             InitDirectInput()
@@ -16,6 +17,7 @@ Public Class Form1
 
             Dim adsr_task As New Task(AddressOf ADSREnvelopeLoop)
             adsr_task.Start()
+
         End If
 
 

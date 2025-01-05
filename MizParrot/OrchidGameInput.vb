@@ -71,7 +71,7 @@ Public Module OrchidGameInput
         If DInputKeyboard IsNot Nothing Then
             DInputKeyboard.Dispose()
         End If
-        D3DDirectInput.Dispose()
+        If D3DDirectInput IsNot Nothing Then D3DDirectInput.Dispose()
     End Sub
 
     Public Sub ListenInputSingle()
