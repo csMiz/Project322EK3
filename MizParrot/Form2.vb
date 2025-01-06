@@ -1,5 +1,6 @@
 ﻿Imports System.IO
 Imports System.Numerics
+Imports System.Text.RegularExpressions
 Imports System.Threading
 Imports SharpDX
 
@@ -11,8 +12,14 @@ Public Class Form2
 
     Public AC As New List(Of Vector2)
 
+    Public ACSampleData As Single() = {}
+
+    Public PhaseBuffer As Single() = {}
+
+    Public RebuildData As Single() = {}
+
     Private Sub Form2_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        BG = New Bitmap("C:\Users\asdfg\Desktop\Project322EK3\WSamples\05.png")
+        BG = New Bitmap("C:\Users\asdfg\Desktop\Project322EK3\WSamples\07.png")
         BM = New Bitmap(1000, 500)
 
         AC.Add(New Vector2(0, 0))
@@ -26,7 +33,7 @@ Public Class Form2
         Using g As Graphics = Graphics.FromImage(BM)
             g.Clear(Color.White)
             g.DrawImage(BG, New Rectangle(0, 0, 1000, 500))
-            Dim RECT_R As Single = 10.0
+            Dim RECT_R As Single = 4.0
             For i = 0 To AC.Count - 1
                 Dim pt As Vector2 = AC(i)
                 g.FillRectangle(Brushes.Black, New Rectangle(pt.X * 1000 - RECT_R, -pt.Y * 250 + 250 - RECT_R, RECT_R * 2, RECT_R * 2))
@@ -35,6 +42,18 @@ Public Class Form2
                     g.DrawLine(Pens.Black, New Point(pt.X * 1000, -pt.Y * 250 + 250), New Point(pt_last.X * 1000, -pt_last.Y * 250 + 250))
                 End If
             Next
+
+            If RebuildData.Count > 128 Then
+                For i = 0 To RebuildData.Count - 1
+                    Dim x As Single = i * 1.0 / RebuildData.Count
+                    Dim y As Single = RebuildData(i)
+                    If i > 0 Then
+                        Dim x_last As Single = (i - 1) * 1.0 / RebuildData.Count
+                        Dim y_last As Single = RebuildData(i - 1)
+                        g.DrawLine(Pens.Blue, New Point(x * 1000, -y * 250 + 250), New Point(x_last * 1000, -y_last * 250 + 250))
+                    End If
+                Next
+            End If
         End Using
         PictureBox1.Image = BM
         PictureBox1.Invalidate()
@@ -103,34 +122,98 @@ Public Class Form2
     End Sub
 
     Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
-        Dim file As New FileStream("C:\Users\asdfg\Desktop\Project322EK3\WSamples\dump.txt", FileMode.Create)
-        Using sw As New StreamWriter(file)
-            For Each pt In AC
-                Dim line = pt.X.ToString & "," & pt.Y.ToString
-                sw.WriteLine(line)
-            Next
-        End Using
-        file.Close()
-        file.Dispose()
+        ' generate samples
+        ReDim ACSampleData(4410 - 1)
+        For i = 0 To 4410 - 1
+            Dim x As Single = i / 4410.0
+            ' search left ac and right ac
+            Dim ac_left_id As Integer = FindLeftAnchor(x)
+            Dim ac_left As Vector2 = AC(ac_left_id)
+            Dim ac_right As Vector2 = AC(ac_left_id + 1)
+            ' do interpolation
+            Dim progress As Single = (x - ac_left.X) / (ac_right.X - ac_left.X)
+            Dim y As Single = ac_left.Y * (1.0 - progress) + ac_right.Y * progress
+            ACSampleData(i) = y
+        Next
 
     End Sub
 
-    Private Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
-        ' generate samples
-        Dim sp(1023) As Single
-        For i = 0 To 1023
-            Dim x As Single = i / 1024.0
-            sp(i) = Math.Sin(3.0 * (2.0 * Math.PI * x))
+    Public Function FindLeftAnchor(x As Single) As Integer
+        For i = 0 To AC.Count - 1
+            If AC(i).X <= x Then
+            Else
+                Return i - 1
+            End If
         Next
-        Dim freq_table As Single() = DFT_v2(sp)
-        Dim line As String = ""
+        Return (AC.Count - 2)
+    End Function
+
+    Private Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
+        '' test generate samples
+        'Dim sp(1023) As Single
+        'For i = 0 To 1023
+        '    Dim x As Single = i / 1024.0
+        '    sp(i) = Math.Sin(3.0 * (2.0 * Math.PI * x)) + Math.Sin(7.0 * (2.0 * Math.PI * x))
+        'Next
+        Dim sp = ACSampleData
+        If sp.Count < 512 Then Return
+
+        Dim freq_table As Single()
+        Dim phase_table As Single()
+        DFT_v3(sp, freq_table, phase_table)
+
+        freq_table = FreqFilter(freq_table)
+
+        Dim line = ""
         For Each f In freq_table
             line &= f.ToString & vbCrLf
         Next
         TextBox1.Text = line
 
+        PhaseBuffer = phase_table
+
+        If True Then
+            Dim file_freq As New FileStream("C:\Users\asdfg\Desktop\Project322EK3\WSamples\dump_freq.txt", FileMode.Create)
+            Using sw As New StreamWriter(file_freq)
+                For Each f_val As Single In freq_table
+                    sw.WriteLine(f_val.ToString)
+                Next
+            End Using
+            file_freq.Close()
+            file_freq.Dispose()
+        End If
+        If True Then
+            Dim file_phase As New FileStream("C:\Users\asdfg\Desktop\Project322EK3\WSamples\dump_phase.txt", FileMode.Create)
+            Using sw As New StreamWriter(file_phase)
+                For Each p_val As Single In phase_table
+                    sw.WriteLine(p_val.ToString)
+                Next
+            End Using
+            file_phase.Close()
+            file_phase.Dispose()
+        End If
+
     End Sub
 
+    Public Function FreqFilter(arr0 As Single()) As Single()
+        Dim res(arr0.Count - 1) As Single
+        For i = 0 To arr0.Count - 1
+            If arr0(i) >= 0.0001 Then
+                res(i) = arr0(i)
+            Else
+                res(i) = 0.0
+            End If
+        Next
+        Return res
+    End Function
+
+    Public Function CalculateLoss(arr0 As Single(), arr1 As Single()) As Single
+        Dim loss As Single = 0.0
+        For i = 0 To arr0.Count - 1
+            loss += Math.Abs(arr1(i) - arr0(i))
+        Next
+        Return loss
+    End Function
 
     '    Private Double[] dft(Double[] data)
     '{
@@ -222,12 +305,22 @@ Public Class Form2
                 real += magnitudeArray(k) * CSng(Math.Cos(angle + phaseArray(k)))
                 imag += magnitudeArray(k) * CSng(Math.Sin(angle + phaseArray(k)))
             Next
-            outputArray(t) = CSng(real / n) ' 除以n还原原始信号
+            outputArray(t) = CSng(real)
         Next
 
         Return outputArray
     End Function
 
+    Private Sub Button3_Click(sender As Object, e As EventArgs) Handles Button3.Click
+        Dim freq_table(PhaseBuffer.Count - 1) As Single
+        Dim txt As String = TextBox1.Text
+        Dim lines As String() = Regex.Split(txt, vbCrLf)
+        For i = 0 To lines.Count - 1
+            freq_table(i) = CSng(lines(i))
+        Next
 
+        RebuildData = IDFT_v3(freq_table, PhaseBuffer)
 
+        DrawAnchorMode()
+    End Sub
 End Class

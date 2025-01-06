@@ -30,6 +30,7 @@ Partial Class Form1
         ' Label1
         ' 
         Label1.BorderStyle = BorderStyle.FixedSingle
+        Label1.Font = New Font("Microsoft YaHei UI", 16.2F, FontStyle.Regular, GraphicsUnit.Point)
         Label1.Location = New Point(12, 9)
         Label1.Name = "Label1"
         Label1.Size = New Size(470, 475)
@@ -47,7 +48,7 @@ Partial Class Form1
         ClientSize = New Size(499, 493)
         Controls.Add(Label1)
         Name = "Form1"
-        Text = "MizParrot"
+        Text = "PMonitor"
         ResumeLayout(False)
     End Sub
 

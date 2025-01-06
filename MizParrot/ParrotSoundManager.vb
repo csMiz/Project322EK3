@@ -1,4 +1,5 @@
-﻿Imports SharpDX
+﻿Imports System.IO
+Imports SharpDX
 Imports SharpDX.Multimedia
 Imports SharpDX.XAudio2
 
@@ -46,7 +47,7 @@ Module ParrotSoundManager
             End SyncLock
         Next
 
-        GenerateNoteBuffer2()
+        GenerateNoteBuffer3()
 
     End Sub
 
@@ -160,6 +161,79 @@ Module ParrotSoundManager
         Next
 
         NoteBuffer40 = dstream
+    End Sub
+
+    Public Sub GenerateNoteBuffer3(Optional pitch As Integer = 40)
+        Dim freq As Single = 440.0 * (2.0 ^ ((pitch - 49) / 12.0))
+
+        Dim freq_table(127) As Single
+        Dim phase_table(127) As Single
+        If True Then
+            Dim file_f As New FileStream("C:\Users\asdfg\Desktop\Project322EK3\WSamples\dump_freq.txt", FileMode.Open)
+            Using sr As New StreamReader(file_f)
+                Dim line_id As Integer = 0
+                While Not sr.EndOfStream
+                    Dim line As String = sr.ReadLine.Trim
+                    If line.Length > 0 Then
+                        freq_table(line_id) = CSng(line)
+                    End If
+                    line_id += 1
+                    If line_id > 127 Then Exit While
+                End While
+            End Using
+            file_f.Close()
+            file_f.Dispose()
+        End If
+        If True Then
+            Dim file_p As New FileStream("C:\Users\asdfg\Desktop\Project322EK3\WSamples\dump_phase.txt", FileMode.Open)
+            Using sr As New StreamReader(file_p)
+                Dim line_id As Integer = 0
+                While Not sr.EndOfStream
+                    Dim line As String = sr.ReadLine.Trim
+                    If line.Length > 0 Then
+                        phase_table(line_id) = CSng(line)
+                    End If
+                    line_id += 1
+                    If line_id > 127 Then Exit While
+                End While
+            End Using
+            file_p.Close()
+            file_p.Dispose()
+        End If
+
+        ' test custom filter?
+        For i = 0 To 127
+            freq_table(i) *= Math.Max(((-3.0 / 127.0) * i + 1.0), 0.0)
+        Next
+
+        ' idft
+        Dim n As Integer = 128
+        Dim output_size As Integer = 44100 * 3
+        Dim outputArray As Single() = New Single(output_size - 1) {}
+
+        Dim max_val As Single = 0.0
+        For t As Integer = 0 To output_size - 1
+            Dim real As Single = 0
+            For k As Integer = 0 To n - 1
+                Dim angle As Double = 2 * Math.PI * freq * 0.1 * t * k / 4410
+                real += freq_table(k) * CSng(Math.Cos((angle + phase_table(k))))
+            Next
+            max_val = Math.Max(max_val, real)
+            outputArray(t) = Math.Clamp(real, -1.0, 1.0)
+        Next
+        Debug.WriteLine("max: " & max_val.ToString)
+
+        Dim dstream As New SharpDX.DataStream(44100 * 4 * 3, True, True)
+        dstream.Position = 0
+        For i = 0 To 44100 * 3 - 1
+            Dim val As Single = outputArray(i)
+
+            dstream.Write(CShort(val * 32767))
+            dstream.Write(CShort(val * 32767))
+        Next
+
+        NoteBuffer40 = dstream
+
     End Sub
 
 

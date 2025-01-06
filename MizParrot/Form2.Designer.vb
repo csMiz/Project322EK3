@@ -26,6 +26,7 @@ Partial Class Form2
         TextBox1 = New TextBox()
         Button1 = New Button()
         Button2 = New Button()
+        Button3 = New Button()
         CType(PictureBox1, ComponentModel.ISupportInitialize).BeginInit()
         SuspendLayout()
         ' 
@@ -65,11 +66,21 @@ Partial Class Form2
         Button2.Text = "DFT"
         Button2.UseVisualStyleBackColor = True
         ' 
+        ' Button3
+        ' 
+        Button3.Location = New Point(618, 190)
+        Button3.Name = "Button3"
+        Button3.Size = New Size(144, 83)
+        Button3.TabIndex = 4
+        Button3.Text = "IDFT"
+        Button3.UseVisualStyleBackColor = True
+        ' 
         ' Form2
         ' 
         AutoScaleDimensions = New SizeF(9F, 20F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(774, 462)
+        Controls.Add(Button3)
         Controls.Add(Button2)
         Controls.Add(Button1)
         Controls.Add(TextBox1)
@@ -85,4 +96,5 @@ Partial Class Form2
     Friend WithEvents TextBox1 As TextBox
     Friend WithEvents Button1 As Button
     Friend WithEvents Button2 As Button
+    Friend WithEvents Button3 As Button
 End Class

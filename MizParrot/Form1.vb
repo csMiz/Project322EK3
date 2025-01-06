@@ -4,7 +4,7 @@
 Public Class Form1
 
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        Const TEST_WAVEFORM As Boolean = True
+        Const TEST_WAVEFORM As Boolean = False
 
         If TEST_WAVEFORM Then
             Form2.Show()
@@ -48,7 +48,7 @@ Public Class Form1
             Next
         End SyncLock
 
-        Label1.Text = "Current: " & vbCrLf & busy_chan.ToString & " / " & total_chan.ToString
+        Label1.Text = "Active Key: " & vbCrLf & busy_chan.ToString & " / " & total_chan.ToString
     End Sub
 End Class
 
