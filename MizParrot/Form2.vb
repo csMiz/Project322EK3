@@ -19,7 +19,7 @@ Public Class Form2
     Public RebuildData As Single() = {}
 
     Private Sub Form2_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        BG = New Bitmap("C:\Users\asdfg\Desktop\Project322EK3\WSamples\07.png")
+        BG = New Bitmap("C:\Users\asdfg\Desktop\Project322EK3\WSamples\06.png")
         BM = New Bitmap(1000, 500)
 
         AC.Add(New Vector2(0, 0))
@@ -316,7 +316,9 @@ Public Class Form2
         Dim txt As String = TextBox1.Text
         Dim lines As String() = Regex.Split(txt, vbCrLf)
         For i = 0 To lines.Count - 1
-            freq_table(i) = CSng(lines(i))
+            If lines(i).Trim.Length > 0 Then
+                freq_table(i) = CSng(lines(i))
+            End If
         Next
 
         RebuildData = IDFT_v3(freq_table, PhaseBuffer)

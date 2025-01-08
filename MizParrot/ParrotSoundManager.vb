@@ -202,9 +202,9 @@ Module ParrotSoundManager
         End If
 
         ' test custom filter?
-        For i = 0 To 127
-            freq_table(i) *= Math.Max(((-3.0 / 127.0) * i + 1.0), 0.0)
-        Next
+        'For i = 0 To 127
+        '    freq_table(i) *= Math.Max(((-3.0 / 127.0) * i + 1.0), 0.0)
+        'Next
 
         ' idft
         Dim n As Integer = 128
@@ -218,7 +218,7 @@ Module ParrotSoundManager
                 Dim angle As Double = 2 * Math.PI * freq * 0.1 * t * k / 4410
                 real += freq_table(k) * CSng(Math.Cos((angle + phase_table(k))))
             Next
-            max_val = Math.Max(max_val, real)
+            max_val = Math.Max(max_val, Math.Abs(real))
             outputArray(t) = Math.Clamp(real, -1.0, 1.0)
         Next
         Debug.WriteLine("max: " & max_val.ToString)
@@ -226,7 +226,7 @@ Module ParrotSoundManager
         Dim dstream As New SharpDX.DataStream(44100 * 4 * 3, True, True)
         dstream.Position = 0
         For i = 0 To 44100 * 3 - 1
-            Dim val As Single = outputArray(i)
+            Dim val As Single = outputArray(i) / (max_val * 1.2)
 
             dstream.Write(CShort(val * 32767))
             dstream.Write(CShort(val * 32767))
